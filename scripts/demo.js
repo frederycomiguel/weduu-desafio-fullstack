@@ -33,7 +33,7 @@ async function openTunnel(port) {
   const existing = await current();
   if (existing) return { url: existing, stop: () => {} };
 
-  const child = spawn(`ngrok http ${port} --log=stdout`, { stdio: 'ignore', shell: true });
+  const child = spawn('ngrok', ['http', String(port), '--log=stdout'], { stdio: 'ignore' });
   let spawnError;
   child.on('error', (e) => { spawnError = e; });
   for (let i = 0; i < 40; i++) {
