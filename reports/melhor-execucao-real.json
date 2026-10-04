@@ -1,0 +1,94 @@
+{
+  "run_id": "mqt8ikjhm3cgk6aavc4oylms",
+  "executed_at": "2026-10-03T21:41:47.062Z",
+  "report": {
+    "ok": true,
+    "score": 100,
+    "attempt": 1,
+    "ack": {
+      "target_ms": 600,
+      "measured": 20,
+      "p50": 242,
+      "p95": 414,
+      "worst": {
+        "seq": 14,
+        "ms": 487
+      },
+      "over_target": [],
+      "failed": [],
+      "warmup_ms": 260,
+      "pass": true
+    },
+    "idempotency": {
+      "duplicate_seq": 3,
+      "duplicate_sku": "zli2y1qdvtw8f4mg4mkzcrtk",
+      "enrich_calls": 1,
+      "expected_calls": 1,
+      "pass": true
+    },
+    "retry": {
+      "forced_500": 1,
+      "skus_with_500": 1,
+      "recovered": 1,
+      "pass": true
+    },
+    "concurrency": {
+      "limit": 3,
+      "got_429": 0,
+      "skus_stuck_after_429": [],
+      "pass": true
+    },
+    "result": {
+      "expected": 20,
+      "matched": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "mismatched": [],
+      "missing": [],
+      "unknown": [],
+      "pass": true
+    },
+    "duration_ms": 1824,
+    "breakdown": {
+      "result": {
+        "weight": 30,
+        "earned": 30
+      },
+      "ack": {
+        "weight": 30,
+        "earned": 30
+      },
+      "idempotency": {
+        "weight": 15,
+        "earned": 15
+      },
+      "retry": {
+        "weight": 15,
+        "earned": 15
+      },
+      "concurrency": {
+        "weight": 10,
+        "earned": 10
+      }
+    }
+  }
+}
