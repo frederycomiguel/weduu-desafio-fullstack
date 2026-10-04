@@ -10,6 +10,7 @@
     "burst": "node scripts/burst.js",
     "test": "node --test \"test/**/*.test.js\"",
     "mock": "node test/mock-platform/server.js",
-    "demo": "node scripts/demo-local.js"
+    "demo": "node scripts/demo.js",
+    "demo:real": "node scripts/demo.js --real"
   }
 }

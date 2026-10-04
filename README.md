@@ -28,6 +28,12 @@ Demonstração local ponta a ponta com um comando (sobe o mock e o serviço, reg
 npm run demo
 ```
 
+O mesmo fluxo contra a plataforma Weduu real: abre o ngrok sozinho, registra, pede um lote e mostra o relatório dela (requer o ngrok instalado e autenticado):
+
+```bash
+npm run demo:real
+```
+
 Relatórios:
 - [`reports/melhor-execucao-real.md`](reports/melhor-execucao-real.md): melhor execução contra a plataforma real (100/100). Em 8 lotes reais o score ficou entre 97 e 100; o ACK varia com a latência do túnel ngrok, não com o processamento.
 - [`reports/melhor-execucao.md`](reports/melhor-execucao.md): execução contra o mock local (gerado por `test/report.js`).
