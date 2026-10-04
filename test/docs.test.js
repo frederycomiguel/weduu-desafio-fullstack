@@ -13,8 +13,6 @@ test('/docs serve o Swagger UI e /openapi.json descreve as rotas', async () => {
     assert.match(docs.headers.get('content-type'), /text\/html/);
     const html = await docs.text();
     assert.match(html, /SwaggerUIBundle/);
-    assert.match(html, /StandaloneLayout/, 'o seletor de definições exige o layout Standalone');
-    assert.match(html, /swagger-ui-standalone-preset/);
 
     const spec = await (await fetch(`http://127.0.0.1:${port}/openapi.json`)).json();
     assert.equal(spec.openapi, '3.0.3');
@@ -22,10 +20,6 @@ test('/docs serve o Swagger UI e /openapi.json descreve as rotas', async () => {
       assert.ok(spec.paths[path], `spec sem a rota ${path}`);
     }
 
-    const platform = await (await fetch(`http://127.0.0.1:${port}/openapi-platform.json`)).json();
-    for (const path of ['/register', '/burst/{cid}', '/enrich/{sku}', '/callback']) {
-      assert.ok(platform.paths[path], `spec da plataforma sem a rota ${path}`);
-    }
   } finally {
     await service.close();
   }

@@ -314,7 +314,7 @@
           "Documentação"
         ],
         "summary": "Swagger UI",
-        "description": "Esta página. Tem um seletor com duas especificações: o meu serviço e a plataforma Weduu (rotas consumidas).",
+        "description": "Esta página, com as rotas do serviço. As rotas da plataforma Weduu que o serviço consome (/register, /burst/{cid}, /enrich/{sku}, /callback) ficam na coleção do Postman (docs/postman-collection.json).",
         "responses": {
           "200": {
             "description": "Página HTML do Swagger UI",
@@ -335,27 +335,6 @@
           "Documentação"
         ],
         "summary": "Especificação das rotas deste serviço",
-        "responses": {
-          "200": {
-            "description": "Especificação OpenAPI 3",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/openapi-platform.json": {
-      "get": {
-        "tags": [
-          "Documentação"
-        ],
-        "summary": "Especificação das rotas da plataforma que o serviço consome",
         "responses": {
           "200": {
             "description": "Especificação OpenAPI 3",
