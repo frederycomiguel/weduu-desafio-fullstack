@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Weduu - Desafio Webhook",
-    "description": "Rotas do serviço (localhost) e da plataforma Weduu. Variáveis da coleção: baseUrl (serviço), platformUrl, webhookUrl (URL do ngrok), cid, token e run_id. Os requests de register e burst gravam cid, token e run_id automaticamente. Para obter SKUs reais de um lote, abra o inspetor do ngrok em http://localhost:4040 e veja o corpo das chamadas POST /process.",
+    "description": "COMO USAR: (1) npm start e ngrok http 4000 abertos; (2) importe esta coleção; (3) clique com o botão direito na pasta \"A. Fluxo automático\" > Run folder (ou use o Runner) e execute em ordem. Os passos 0 a 5 pegam a URL do ngrok, registram, pedem o lote, descobrem um SKU real e testam /enrich e /callback sozinhos. A pasta B tem as rotas do seu serviço para testar uma a uma.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -15,7 +15,7 @@
     },
     {
       "key": "webhookUrl",
-      "value": "https://SUA-URL.ngrok-free.dev"
+      "value": ""
     },
     {
       "key": "cid",
@@ -31,12 +31,206 @@
     },
     {
       "key": "sku",
-      "value": "sku-001"
+      "value": ""
+    },
+    {
+      "key": "price",
+      "value": "0"
+    },
+    {
+      "key": "stock",
+      "value": "0"
     }
   ],
   "item": [
     {
-      "name": "1. Meu serviço (localhost)",
+      "name": "A. Fluxo automático (rodar em ordem)",
+      "item": [
+        {
+          "name": "0. Pegar a URL do ngrok",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const t = (pm.response.json().tunnels || []).find(x => x.public_url.startsWith('https://'));",
+                  "pm.test('ngrok aberto (rode: ngrok http 4000)', () => pm.expect(t).to.exist);",
+                  "if (t) pm.collectionVariables.set('webhookUrl', t.public_url);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://127.0.0.1:4040/api/tunnels",
+            "description": "Lê a URL pública do ngrok na API local dele (porta 4040) e grava em webhookUrl. O ngrok e o npm start precisam estar abertos."
+          }
+        },
+        {
+          "name": "1. POST /register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.collectionVariables.set('cid', j.cid);",
+                  "pm.collectionVariables.set('token', j.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{platformUrl}}/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Frederyco\",\n  \"webhook\": \"{{webhookUrl}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "2. POST /burst/:cid",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('lote de 20', () => pm.expect(pm.response.json().total).to.eql(20));",
+                  "pm.collectionVariables.set('run_id', pm.response.json().run_id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              }
+            ],
+            "url": "{{platformUrl}}/burst/{{cid}}"
+          }
+        },
+        {
+          "name": "3. Pegar um SKU real no meu serviço (GET /runs/:id)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// espera as mensagens do lote chegarem ao serviço",
+                  "setTimeout(function () {}, 4000);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('as mensagens chegaram ao serviço', () => pm.expect(j.received).to.be.above(0));",
+                  "pm.test('há SKUs de exemplo', () => pm.expect(j.sample_skus.length).to.be.above(0));",
+                  "pm.collectionVariables.set('sku', j.sample_skus[0]);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/runs/{{run_id}}",
+            "description": "O serviço guarda os SKUs recebidos em /process. Este request lê o primeiro e grava em sku."
+          }
+        },
+        {
+          "name": "4. GET /enrich/:sku",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('traz preço e estoque', () => { pm.expect(j.price).to.be.a('number'); pm.expect(j.stock).to.be.a('number'); });",
+                  "pm.collectionVariables.set('price', j.price);",
+                  "pm.collectionVariables.set('stock', j.stock);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-cid",
+                "value": "{{cid}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              }
+            ],
+            "url": "{{platformUrl}}/enrich/{{sku}}",
+            "description": "Latência esperada de 400 a 800 ms. 429 e 500 também são respostas do contrato (limite de 3 em voo e ~10% de falha transitória): se aparecerem, rode de novo."
+          }
+        },
+        {
+          "name": "5. POST /callback",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json();",
+                  "pm.test('relatório com score', () => pm.expect(r.score).to.be.a('number'));",
+                  "console.log(JSON.stringify(r, null, 2));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              }
+            ],
+            "url": "{{platformUrl}}/callback",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cid\": \"{{cid}}\",\n  \"run_id\": \"{{run_id}}\",\n  \"result\": [\n    { \"seq\": 0, \"sku\": \"{{sku}}\", \"price\": {{price}}, \"stock\": {{stock}} }\n  ]\n}"
+            },
+            "description": "Envia 1 item real (o do passo 4). O relatório vai mostrar os outros 19 como faltando; serve para ver o formato da resposta. O envio completo com score 100 é feito pelo serviço (npm run demo:real). Veja o corpo completo no Console do Postman."
+          }
+        }
+      ]
+    },
+    {
+      "name": "B. Rotas do meu serviço (manual)",
       "item": [
         {
           "name": "POST /check - ecoa o token",
@@ -173,130 +367,6 @@
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/burst"
-          }
-        }
-      ]
-    },
-    {
-      "name": "2. Plataforma Weduu (real)",
-      "item": [
-        {
-          "name": "POST /register (precisa do serviço + ngrok no ar)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('200', () => pm.response.to.have.status(200));",
-                  "const j = pm.response.json();",
-                  "pm.collectionVariables.set('cid', j.cid);",
-                  "pm.collectionVariables.set('token', j.token);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "content-type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Frederyco\",\n  \"webhook\": \"{{webhookUrl}}\"\n}"
-            },
-            "url": "{{platformUrl}}/register"
-          }
-        },
-        {
-          "name": "POST /burst/:cid - pede lote direto à plataforma",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('200', () => pm.response.to.have.status(200));",
-                  "pm.collectionVariables.set('run_id', pm.response.json().run_id);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "x-token",
-                "value": "{{token}}"
-              }
-            ],
-            "url": "{{platformUrl}}/burst/{{cid}}"
-          }
-        },
-        {
-          "name": "GET /enrich/:sku (troque pelo SKU de um lote real; sku-001 só existe no mock)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "x-cid",
-                "value": "{{cid}}"
-              },
-              {
-                "key": "x-token",
-                "value": "{{token}}"
-              }
-            ],
-            "url": "{{platformUrl}}/enrich/{{sku}}"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('200, 404 (sku inválido), 429 ou 500 são respostas válidas do contrato', () => pm.expect([200,404,429,500]).to.include(pm.response.code));",
-                  "pm.test('latência dentro do esperado (400-800 ms) quando 200', () => { if (pm.response.code === 200) pm.expect(pm.response.responseTime).to.be.below(2000); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "POST /callback (envia um resultado e recebe o relatório)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('200', () => pm.response.to.have.status(200));",
-                  "console.log(JSON.stringify(pm.response.json(), null, 2));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "content-type",
-                "value": "application/json"
-              },
-              {
-                "key": "x-token",
-                "value": "{{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"cid\": \"{{cid}}\",\n  \"run_id\": \"{{run_id}}\",\n  \"result\": [\n    { \"seq\": 0, \"sku\": \"{{sku}}\", \"price\": 149.9, \"stock\": 42 }\n  ]\n}"
-            },
-            "url": "{{platformUrl}}/callback",
-            "description": "Pode ser enviado várias vezes para o mesmo run_id; cada envio gera um relatório novo. Com um único item o relatório mostrará itens faltando, o que serve para ver o formato. O envio completo é feito pelo serviço (npm run demo:real)."
           }
         }
       ]

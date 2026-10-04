@@ -40,7 +40,7 @@ Relatórios:
 
 Com o serviço rodando (`npm start`), a documentação interativa (Swagger UI) fica em http://localhost:4000/docs e a especificação OpenAPI em `/openapi.json`. As rotas da plataforma Weduu que o serviço consome (`/register`, `/burst/{cid}`, `/enrich/{sku}`, `/callback`) estão na coleção do Postman; dá para testar `/check` e `/process` direto pelo navegador. Com o ngrok aberto, o fluxo real também roda só pelo Swagger: `POST /register` (URL do ngrok) -> `POST /burst` -> `GET /runs/{id}` (relatório em `callback.report`).
 
-Para testar as rotas à mão no Postman, importe [`docs/postman-collection.json`](docs/postman-collection.json) (rotas do serviço e da plataforma, com testes de ACK, duplicata e validação).
+Para testar no Postman, importe [`docs/postman-collection.json`](docs/postman-collection.json). Com `npm start` e `ngrok http 4000` abertos, rode a pasta "A. Fluxo automático" no Runner: ela pega a URL do ngrok, registra, pede o lote, descobre um SKU real e testa `/enrich` e `/callback` sozinha. A pasta "B" tem as rotas do serviço (ACK, duplicata, validação).
 
 ## Rodar contra a plataforma real (passo manual)
 

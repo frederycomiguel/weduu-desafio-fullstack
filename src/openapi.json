@@ -427,6 +427,13 @@
                 "additionalProperties": true
               }
             }
+          },
+          "sample_skus": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Até 20 primeiros SKUs do lote, em ordem de seq (para testar o /enrich à mão)"
           }
         }
       },

@@ -139,6 +139,8 @@ export class RunStore {
       started_at: run.startedAt,
       ...run.counters,
       pending: run.items.size - run.finalized,
+      // Amostra dos primeiros SKUs (por seq): útil para testar o /enrich à mão com um SKU real.
+      sample_skus: [...run.items.entries()].sort((a, b) => a[0] - b[0]).slice(0, 20).map(([, it]) => it.sku),
       complete: this.isComplete(run),
       callback: { ...run.callback },
     };
