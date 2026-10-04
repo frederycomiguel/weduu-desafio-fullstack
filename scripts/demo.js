@@ -142,6 +142,9 @@ try {
     await finish(ok);
   }
 } catch (err) {
-  console.error(`\nERRO: ${err.message}`);
+  const hint = err.code === 'EADDRINUSE'
+    ? ' A porta já está em uso, provavelmente por um `npm start` aberto. Encerre-o (Ctrl+C) e tente de novo: o demo sobe o serviço sozinho.'
+    : '';
+  console.error(`\nERRO: ${err.message}.${hint}`);
   await finish(false);
 }
