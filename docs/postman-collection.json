@@ -1,16 +1,38 @@
 {
   "info": {
     "name": "Weduu - Desafio Webhook",
-    "description": "Rotas do serviço (localhost) e da plataforma Weduu. Variáveis da coleção: baseUrl (serviço), platformUrl, webhookUrl (URL do ngrok), cid, token e run_id. Os requests de register e burst gravam cid, token e run_id automaticamente.",
+    "description": "Rotas do serviço (localhost) e da plataforma Weduu. Variáveis da coleção: baseUrl (serviço), platformUrl, webhookUrl (URL do ngrok), cid, token e run_id. Os requests de register e burst gravam cid, token e run_id automaticamente. Para obter SKUs reais de um lote, abra o inspetor do ngrok em http://localhost:4040 e veja o corpo das chamadas POST /process.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:4000" },
-    { "key": "platformUrl", "value": "https://dev-wdu-ped-test-1014944555984.us-central1.run.app" },
-    { "key": "webhookUrl", "value": "https://SUA-URL.ngrok-free.dev" },
-    { "key": "cid", "value": "" },
-    { "key": "token", "value": "" },
-    { "key": "run_id", "value": "r1" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000"
+    },
+    {
+      "key": "platformUrl",
+      "value": "https://dev-wdu-ped-test-1014944555984.us-central1.run.app"
+    },
+    {
+      "key": "webhookUrl",
+      "value": "https://SUA-URL.ngrok-free.dev"
+    },
+    {
+      "key": "cid",
+      "value": ""
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "run_id",
+      "value": "r1"
+    },
+    {
+      "key": "sku",
+      "value": "sku-001"
+    }
   ],
   "item": [
     {
@@ -18,67 +40,140 @@
       "item": [
         {
           "name": "POST /check - ecoa o token",
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('200', () => pm.response.to.have.status(200));",
-            "pm.test('devolve o mesmo token', () => pm.expect(pm.response.json().token).to.eql('abc123'));"
-          ] } }],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('devolve o mesmo token', () => pm.expect(pm.response.json().token).to.eql('abc123'));"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "content-type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"token\": \"abc123\"\n}" },
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"abc123\"\n}"
+            },
             "url": "{{baseUrl}}/check"
           }
         },
         {
           "name": "POST /process - mensagem nova (ACK rápido)",
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
-            "pm.test('ACK abaixo de 600 ms', () => pm.expect(pm.response.responseTime).to.be.below(600));",
-            "pm.test('não é duplicata', () => pm.expect(pm.response.json().duplicate).to.eql(false));"
-          ] } }],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('ACK abaixo de 600 ms', () => pm.expect(pm.response.responseTime).to.be.below(600));",
+                  "pm.test('não é duplicata', () => pm.expect(pm.response.json().duplicate).to.eql(false));"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "content-type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"run_id\": \"{{run_id}}\",\n  \"seq\": 0,\n  \"sku\": \"sku-001\"\n}" },
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"run_id\": \"{{run_id}}\",\n  \"seq\": 0,\n  \"sku\": \"sku-001\"\n}"
+            },
             "url": "{{baseUrl}}/process"
           }
         },
         {
           "name": "POST /process - repetir a mesma mensagem (duplicata)",
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('2xx mesmo sendo duplicata', () => pm.expect(pm.response.code).to.be.within(200, 299));",
-            "pm.test('marcada como duplicata', () => pm.expect(pm.response.json().duplicate).to.eql(true));"
-          ] } }],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx mesmo sendo duplicata', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('marcada como duplicata', () => pm.expect(pm.response.json().duplicate).to.eql(true));"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "content-type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"run_id\": \"{{run_id}}\",\n  \"seq\": 0,\n  \"sku\": \"sku-001\"\n}" },
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"run_id\": \"{{run_id}}\",\n  \"seq\": 0,\n  \"sku\": \"sku-001\"\n}"
+            },
             "url": "{{baseUrl}}/process"
           }
         },
         {
           "name": "POST /process - corpo inválido (espera 400)",
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('400', () => pm.response.to.have.status(400));"
-          ] } }],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "content-type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"run_id\": \"{{run_id}}\"\n}" },
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"run_id\": \"{{run_id}}\"\n}"
+            },
             "url": "{{baseUrl}}/process"
           }
         },
         {
           "name": "GET /runs/:id - estado do lote",
-          "request": { "method": "GET", "url": "{{baseUrl}}/runs/{{run_id}}" }
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/runs/{{run_id}}"
+          }
         },
         {
           "name": "GET /health",
-          "request": { "method": "GET", "url": "{{baseUrl}}/health" }
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health"
+          }
         },
         {
           "name": "POST /burst - gatilho local (precisa estar registrado)",
-          "request": { "method": "POST", "url": "{{baseUrl}}/burst" }
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/burst"
+          }
         }
       ]
     },
@@ -87,40 +182,121 @@
       "item": [
         {
           "name": "POST /register (precisa do serviço + ngrok no ar)",
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('200', () => pm.response.to.have.status(200));",
-            "const j = pm.response.json();",
-            "pm.collectionVariables.set('cid', j.cid);",
-            "pm.collectionVariables.set('token', j.token);"
-          ] } }],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.collectionVariables.set('cid', j.cid);",
+                  "pm.collectionVariables.set('token', j.token);"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "content-type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Frederyco\",\n  \"webhook\": \"{{webhookUrl}}\"\n}" },
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Frederyco\",\n  \"webhook\": \"{{webhookUrl}}\"\n}"
+            },
             "url": "{{platformUrl}}/register"
           }
         },
         {
           "name": "POST /burst/:cid - pede lote direto à plataforma",
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('200', () => pm.response.to.have.status(200));",
-            "pm.collectionVariables.set('run_id', pm.response.json().run_id);"
-          ] } }],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('run_id', pm.response.json().run_id);"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "x-token", "value": "{{token}}" }],
+            "header": [
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              }
+            ],
             "url": "{{platformUrl}}/burst/{{cid}}"
           }
         },
         {
-          "name": "GET /enrich/:sku",
+          "name": "GET /enrich/:sku (troque pelo SKU de um lote real; sku-001 só existe no mock)",
           "request": {
             "method": "GET",
             "header": [
-              { "key": "x-cid", "value": "{{cid}}" },
-              { "key": "x-token", "value": "{{token}}" }
+              {
+                "key": "x-cid",
+                "value": "{{cid}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              }
             ],
-            "url": "{{platformUrl}}/enrich/sku-001"
+            "url": "{{platformUrl}}/enrich/{{sku}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200, 404 (sku inválido), 429 ou 500 são respostas válidas do contrato', () => pm.expect([200,404,429,500]).to.include(pm.response.code));",
+                  "pm.test('latência dentro do esperado (400-800 ms) quando 200', () => { if (pm.response.code === 200) pm.expect(pm.response.responseTime).to.be.below(2000); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /callback (envia um resultado e recebe o relatório)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "console.log(JSON.stringify(pm.response.json(), null, 2));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cid\": \"{{cid}}\",\n  \"run_id\": \"{{run_id}}\",\n  \"result\": [\n    { \"seq\": 0, \"sku\": \"{{sku}}\", \"price\": 149.9, \"stock\": 42 }\n  ]\n}"
+            },
+            "url": "{{platformUrl}}/callback",
+            "description": "Pode ser enviado várias vezes para o mesmo run_id; cada envio gera um relatório novo. Com um único item o relatório mostrará itens faltando, o que serve para ver o formato. O envio completo é feito pelo serviço (npm run demo:real)."
           }
         }
       ]
