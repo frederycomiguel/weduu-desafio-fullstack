@@ -38,7 +38,7 @@ Relatórios:
 - [`reports/melhor-execucao-real.md`](reports/melhor-execucao-real.md): melhor execução contra a plataforma real (100/100). Em 8 lotes reais o score ficou entre 97 e 100; o ACK varia com a latência do túnel ngrok, não com o processamento.
 - [`reports/melhor-execucao.md`](reports/melhor-execucao.md): execução contra o mock local (gerado por `test/report.js`).
 
-Com o serviço rodando (`npm start`), a documentação interativa (Swagger UI) fica em http://localhost:4000/docs e a especificação OpenAPI em `/openapi.json`; dá para testar `/check` e `/process` direto pelo navegador. Com o ngrok aberto, o fluxo real também roda só pelo Swagger: `POST /register` (URL do ngrok) -> `POST /burst` -> `GET /runs/{id}` (relatório em `callback.report`).
+Com o serviço rodando (`npm start`), a documentação interativa (Swagger UI) fica em http://localhost:4000/docs e a especificação OpenAPI em `/openapi.json`. O Swagger tem um seletor com duas especificações: as rotas do serviço e as da plataforma Weduu que ele consome (`/register`, `/burst/{cid}`, `/enrich/{sku}`, `/callback`, só documentação); dá para testar `/check` e `/process` direto pelo navegador. Com o ngrok aberto, o fluxo real também roda só pelo Swagger: `POST /register` (URL do ngrok) -> `POST /burst` -> `GET /runs/{id}` (relatório em `callback.report`).
 
 Para testar as rotas à mão no Postman, importe [`docs/postman-collection.json`](docs/postman-collection.json) (rotas do serviço e da plataforma, com testes de ACK, duplicata e validação).
 
@@ -73,7 +73,8 @@ Variáveis opcionais: `PORT` (4000), `PLATFORM_URL`, `WEBHOOK_URL`, `WEBHOOK_NAM
 src/
   index.js            entrada (carrega credenciais, sobe o servidor)
   app.js              rotas HTTP (/check, /process, /register, /burst, /health, /runs/:id, /docs) e orquestração
-  openapi.json        especificação OpenAPI servida em /openapi.json e usada pelo Swagger UI
+  openapi.json        especificação das rotas do serviço (servida em /openapi.json)
+  openapi-platform.json  especificação das rotas da plataforma consumidas (/openapi-platform.json)
   queue.js            fila FIFO em memória com N workers
   run-store.js        estado por run: itens, dedupe, cache por SKU, contadores
   enrich-client.js    /enrich com semáforo global, retry/backoff e tratamento de 429

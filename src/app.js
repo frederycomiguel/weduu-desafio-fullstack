@@ -9,6 +9,8 @@ import { createPlatformClient, HttpError } from './platform-client.js';
 
 // Especificação OpenAPI lida uma vez na inicialização; servida em /openapi.json e usada pelo Swagger UI.
 const OPENAPI = readFileSync(new URL('./openapi.json', import.meta.url), 'utf8');
+// Segunda especificação: rotas da plataforma Weduu que o serviço consome (só documentação).
+const OPENAPI_PLATFORM = readFileSync(new URL('./openapi-platform.json', import.meta.url), 'utf8');
 
 // Página do Swagger UI (assets carregados do CDN do unpkg; só o navegador precisa de internet).
 const SWAGGER_HTML = `<!doctype html>
@@ -21,7 +23,16 @@ const SWAGGER_HTML = `<!doctype html>
 <body>
   <div id="swagger-ui"></div>
   <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
-  <script>SwaggerUIBundle({ url: '/openapi.json', dom_id: '#swagger-ui' });</script>
+  <script>
+    SwaggerUIBundle({
+      urls: [
+        { url: '/openapi.json', name: 'Meu serviço' },
+        { url: '/openapi-platform.json', name: 'Plataforma Weduu (consumidas)' },
+      ],
+      'urls.primaryName': 'Meu serviço',
+      dom_id: '#swagger-ui',
+    });
+  </script>
 </body>
 </html>`;
 
@@ -206,6 +217,7 @@ export function createService(opts = {}) {
    *  - GET  /runs/:id  resumo/contadores de um run (observabilidade e testes)
    *  - GET  /docs      documentação interativa (Swagger UI) para testar as rotas no navegador
    *  - GET  /openapi.json  especificação OpenAPI das rotas acima
+   *  - GET  /openapi-platform.json  especificação das rotas da plataforma que o serviço consome
    * Qualquer erro inesperado vira 500 sem derrubar o servidor.
    */
   const server = http.createServer(async (req, res) => {
@@ -244,6 +256,10 @@ export function createService(opts = {}) {
       if (req.method === 'GET' && (pathname === '/docs' || pathname === '/docs/')) {
         res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
         return res.end(SWAGGER_HTML);
+      }
+      if (req.method === 'GET' && pathname === '/openapi-platform.json') {
+        res.writeHead(200, { 'content-type': 'application/json' });
+        return res.end(OPENAPI_PLATFORM);
       }
       if (req.method === 'GET' && pathname === '/openapi.json') {
         res.writeHead(200, { 'content-type': 'application/json' });

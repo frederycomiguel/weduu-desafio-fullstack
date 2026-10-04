@@ -23,6 +23,10 @@
     {
       "name": "Gatilho local",
       "description": "Não faz parte do contrato; usado por scripts/burst.js"
+    },
+    {
+      "name": "Documentação",
+      "description": "Swagger UI e especificações OpenAPI"
     }
   ],
   "paths": {
@@ -297,6 +301,69 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/docs": {
+      "get": {
+        "tags": [
+          "Documentação"
+        ],
+        "summary": "Swagger UI",
+        "description": "Esta página. Tem um seletor com duas especificações: o meu serviço e a plataforma Weduu (rotas consumidas).",
+        "responses": {
+          "200": {
+            "description": "Página HTML do Swagger UI",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openapi.json": {
+      "get": {
+        "tags": [
+          "Documentação"
+        ],
+        "summary": "Especificação das rotas deste serviço",
+        "responses": {
+          "200": {
+            "description": "Especificação OpenAPI 3",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openapi-platform.json": {
+      "get": {
+        "tags": [
+          "Documentação"
+        ],
+        "summary": "Especificação das rotas da plataforma que o serviço consome",
+        "responses": {
+          "200": {
+            "description": "Especificação OpenAPI 3",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
                 }
               }
             }

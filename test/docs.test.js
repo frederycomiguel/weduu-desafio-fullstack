@@ -18,6 +18,11 @@ test('/docs serve o Swagger UI e /openapi.json descreve as rotas', async () => {
     for (const path of ['/check', '/process', '/health', '/runs/{id}', '/burst']) {
       assert.ok(spec.paths[path], `spec sem a rota ${path}`);
     }
+
+    const platform = await (await fetch(`http://127.0.0.1:${port}/openapi-platform.json`)).json();
+    for (const path of ['/register', '/burst/{cid}', '/enrich/{sku}', '/callback']) {
+      assert.ok(platform.paths[path], `spec da plataforma sem a rota ${path}`);
+    }
   } finally {
     await service.close();
   }
