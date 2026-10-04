@@ -72,19 +72,23 @@ Variáveis opcionais: `PORT` (4000), `PLATFORM_URL`, `WEBHOOK_URL`, `WEBHOOK_NAM
 ```
 src/
   index.js            entrada (carrega credenciais, sobe o servidor)
-  app.js              rotas HTTP (/check, /process, /burst, /health, /runs/:id) e orquestração
+  app.js              rotas HTTP (/check, /process, /register, /burst, /health, /runs/:id, /docs) e orquestração
+  openapi.json        especificação OpenAPI servida em /openapi.json e usada pelo Swagger UI
   queue.js            fila FIFO em memória com N workers
   run-store.js        estado por run: itens, dedupe, cache por SKU, contadores
   enrich-client.js    /enrich com semáforo global, retry/backoff e tratamento de 429
   platform-client.js  register, burst e callback (com retry)
   config.js, util.js, logger.js
-scripts/              register.js, burst.js
-test/                 e2e.test.js, helpers, report.js, mock-platform/
+scripts/              register.js, burst.js, demo.js (npm run demo e demo:real)
+test/                 e2e, unitários, docs e register, helpers, report.js, mock-platform/
 reports/              melhor-execucao-real.md (plataforma real) e melhor-execucao.md (mock), + .json
 docs/DECISOES.md      decisões, trade-offs e escala para 20.000 SKUs
+docs/postman-collection.json  coleção do Postman com as rotas e testes
 ```
 
 ## Documentação
 
 - [docs/DECISOES.md](docs/DECISOES.md): decisões arquiteturais, trade-offs e o que mudaria com 20.000 SKUs
+- [docs/postman-collection.json](docs/postman-collection.json): coleção do Postman para testar as rotas
+- Swagger UI em `/docs` com o serviço rodando (`npm start`)
 - [reports/](reports/): relatórios das execuções (real e mock)
