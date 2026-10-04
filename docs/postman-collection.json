@@ -1,0 +1,129 @@
+{
+  "info": {
+    "name": "Weduu - Desafio Webhook",
+    "description": "Rotas do serviço (localhost) e da plataforma Weduu. Variáveis da coleção: baseUrl (serviço), platformUrl, webhookUrl (URL do ngrok), cid, token e run_id. Os requests de register e burst gravam cid, token e run_id automaticamente.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4000" },
+    { "key": "platformUrl", "value": "https://dev-wdu-ped-test-1014944555984.us-central1.run.app" },
+    { "key": "webhookUrl", "value": "https://SUA-URL.ngrok-free.dev" },
+    { "key": "cid", "value": "" },
+    { "key": "token", "value": "" },
+    { "key": "run_id", "value": "r1" }
+  ],
+  "item": [
+    {
+      "name": "1. Meu serviço (localhost)",
+      "item": [
+        {
+          "name": "POST /check - ecoa o token",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.test('devolve o mesmo token', () => pm.expect(pm.response.json().token).to.eql('abc123'));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"token\": \"abc123\"\n}" },
+            "url": "{{baseUrl}}/check"
+          }
+        },
+        {
+          "name": "POST /process - mensagem nova (ACK rápido)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+            "pm.test('ACK abaixo de 600 ms', () => pm.expect(pm.response.responseTime).to.be.below(600));",
+            "pm.test('não é duplicata', () => pm.expect(pm.response.json().duplicate).to.eql(false));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"run_id\": \"{{run_id}}\",\n  \"seq\": 0,\n  \"sku\": \"sku-001\"\n}" },
+            "url": "{{baseUrl}}/process"
+          }
+        },
+        {
+          "name": "POST /process - repetir a mesma mensagem (duplicata)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('2xx mesmo sendo duplicata', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+            "pm.test('marcada como duplicata', () => pm.expect(pm.response.json().duplicate).to.eql(true));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"run_id\": \"{{run_id}}\",\n  \"seq\": 0,\n  \"sku\": \"sku-001\"\n}" },
+            "url": "{{baseUrl}}/process"
+          }
+        },
+        {
+          "name": "POST /process - corpo inválido (espera 400)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('400', () => pm.response.to.have.status(400));"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"run_id\": \"{{run_id}}\"\n}" },
+            "url": "{{baseUrl}}/process"
+          }
+        },
+        {
+          "name": "GET /runs/:id - estado do lote",
+          "request": { "method": "GET", "url": "{{baseUrl}}/runs/{{run_id}}" }
+        },
+        {
+          "name": "GET /health",
+          "request": { "method": "GET", "url": "{{baseUrl}}/health" }
+        },
+        {
+          "name": "POST /burst - gatilho local (precisa estar registrado)",
+          "request": { "method": "POST", "url": "{{baseUrl}}/burst" }
+        }
+      ]
+    },
+    {
+      "name": "2. Plataforma Weduu (real)",
+      "item": [
+        {
+          "name": "POST /register (precisa do serviço + ngrok no ar)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.collectionVariables.set('cid', j.cid);",
+            "pm.collectionVariables.set('token', j.token);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Frederyco\",\n  \"webhook\": \"{{webhookUrl}}\"\n}" },
+            "url": "{{platformUrl}}/register"
+          }
+        },
+        {
+          "name": "POST /burst/:cid - pede lote direto à plataforma",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200', () => pm.response.to.have.status(200));",
+            "pm.collectionVariables.set('run_id', pm.response.json().run_id);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "x-token", "value": "{{token}}" }],
+            "url": "{{platformUrl}}/burst/{{cid}}"
+          }
+        },
+        {
+          "name": "GET /enrich/:sku",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-cid", "value": "{{cid}}" },
+              { "key": "x-token", "value": "{{token}}" }
+            ],
+            "url": "{{platformUrl}}/enrich/sku-001"
+          }
+        }
+      ]
+    }
+  ]
+}

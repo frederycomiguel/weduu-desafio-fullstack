@@ -38,6 +38,8 @@ Relatórios:
 - [`reports/melhor-execucao-real.md`](reports/melhor-execucao-real.md): melhor execução contra a plataforma real (100/100). Em 8 lotes reais o score ficou entre 97 e 100; o ACK varia com a latência do túnel ngrok, não com o processamento.
 - [`reports/melhor-execucao.md`](reports/melhor-execucao.md): execução contra o mock local (gerado por `test/report.js`).
 
+Para testar as rotas à mão no Postman, importe [`docs/postman-collection.json`](docs/postman-collection.json) (rotas do serviço e da plataforma, com testes de ACK, duplicata e validação).
+
 ## Rodar contra a plataforma real (passo manual)
 
 Estes passos dependem de conta ngrok e da plataforma; execute-os você mesmo.
