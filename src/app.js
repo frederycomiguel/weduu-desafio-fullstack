@@ -1,10 +1,29 @@
 import http from 'node:http';
+import { readFileSync } from 'node:fs';
 import { loadConfig } from './config.js';
 import { createLogger } from './logger.js';
 import { WorkQueue } from './queue.js';
 import { RunStore } from './run-store.js';
 import { createEnrichClient } from './enrich-client.js';
 import { createPlatformClient } from './platform-client.js';
+
+// Especificação OpenAPI lida uma vez na inicialização; servida em /openapi.json e usada pelo Swagger UI.
+const OPENAPI = readFileSync(new URL('./openapi.json', import.meta.url), 'utf8');
+
+// Página do Swagger UI (assets carregados do CDN do unpkg; só o navegador precisa de internet).
+const SWAGGER_HTML = `<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Weduu - Serviço webhook</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+  <script>SwaggerUIBundle({ url: '/openapi.json', dom_id: '#swagger-ui' });</script>
+</body>
+</html>`;
 
 // Tamanho máximo aceito para o corpo de uma requisição (proteção contra payloads gigantes).
 const MAX_BODY = 1024 * 1024;
@@ -184,6 +203,8 @@ export function createService(opts = {}) {
    *                    quem precisa guardar o `total` do run
    *  - GET  /health    estado da fila (tamanho e workers ativos)
    *  - GET  /runs/:id  resumo/contadores de um run (observabilidade e testes)
+   *  - GET  /docs      documentação interativa (Swagger UI) para testar as rotas no navegador
+   *  - GET  /openapi.json  especificação OpenAPI das rotas acima
    * Qualquer erro inesperado vira 500 sem derrubar o servidor.
    */
   const server = http.createServer(async (req, res) => {
@@ -203,6 +224,14 @@ export function createService(opts = {}) {
       }
       if (req.method === 'GET' && pathname === '/health') {
         return send(res, 200, { status: 'ok', queued: queue.size, active: queue.active });
+      }
+      if (req.method === 'GET' && (pathname === '/docs' || pathname === '/docs/')) {
+        res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+        return res.end(SWAGGER_HTML);
+      }
+      if (req.method === 'GET' && pathname === '/openapi.json') {
+        res.writeHead(200, { 'content-type': 'application/json' });
+        return res.end(OPENAPI);
       }
       const m = req.method === 'GET' && pathname.match(/^\/runs\/([^/]+)$/);
       if (m) {

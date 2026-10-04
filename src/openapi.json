@@ -1,0 +1,138 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Weduu - Serviço webhook",
+    "version": "1.0.0",
+    "description": "API do serviço que a plataforma Weduu chama (`/check` e `/process`), mais rotas de observação e um gatilho local. O `/process` responde o ACK antes de qualquer trabalho e o processamento (consulta ao /enrich, consolidação e /callback) acontece em segundo plano."
+  },
+  "servers": [{ "url": "/", "description": "Este serviço" }],
+  "tags": [
+    { "name": "Contrato da plataforma", "description": "Rotas que a plataforma Weduu chama" },
+    { "name": "Observação", "description": "Estado da fila e dos lotes" },
+    { "name": "Gatilho local", "description": "Não faz parte do contrato; usado por scripts/burst.js" }
+  ],
+  "paths": {
+    "/check": {
+      "post": {
+        "tags": ["Contrato da plataforma"],
+        "summary": "Validação do webhook",
+        "description": "Chamada pela plataforma durante o /register. Devolve o mesmo token recebido.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Token" }, "example": { "token": "a3f9..." } } }
+        },
+        "responses": {
+          "200": { "description": "Token ecoado", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Token" } } } },
+          "400": { "description": "Token ausente", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/process": {
+      "post": {
+        "tags": ["Contrato da plataforma"],
+        "summary": "Recebe uma mensagem do lote",
+        "description": "Valida, deduplica por `run_id` + `seq`, responde 202 imediatamente (SLA de ACK: 600 ms) e só então enfileira o item. Duplicatas também recebem 2xx, mas não são reprocessadas.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProcessMessage" }, "example": { "run_id": "r1", "seq": 0, "sku": "sku-001" } } }
+        },
+        "responses": {
+          "202": {
+            "description": "ACK. `duplicate` indica se a mensagem já tinha sido recebida.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Ack" } } }
+          },
+          "400": { "description": "Corpo inválido", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": ["Observação"],
+        "summary": "Estado da fila",
+        "responses": {
+          "200": {
+            "description": "Serviço no ar",
+            "content": { "application/json": { "schema": { "type": "object", "properties": {
+              "status": { "type": "string", "example": "ok" },
+              "queued": { "type": "integer", "description": "Itens aguardando worker" },
+              "active": { "type": "integer", "description": "Itens em processamento agora" }
+            } } } }
+          }
+        }
+      }
+    },
+    "/runs/{id}": {
+      "get": {
+        "tags": ["Observação"],
+        "summary": "Resumo de um lote",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "example": "r1" }],
+        "responses": {
+          "200": { "description": "Contadores e estado do callback", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RunSummary" } } } },
+          "404": { "description": "Lote desconhecido", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/burst": {
+      "post": {
+        "tags": ["Gatilho local"],
+        "summary": "Pede um novo lote à plataforma",
+        "description": "Exige o serviço já registrado (credenciais carregadas). O serviço chama POST /burst/:cid na plataforma e guarda o `total` do lote, necessário para saber quando enviar o /callback.",
+        "responses": {
+          "200": { "description": "Lote criado", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Burst" } } } },
+          "502": { "description": "Falha ao falar com a plataforma ou sem credenciais", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Token": { "type": "object", "required": ["token"], "properties": { "token": { "type": "string" } } },
+      "ProcessMessage": {
+        "type": "object",
+        "required": ["run_id", "seq", "sku"],
+        "properties": {
+          "run_id": { "type": "string" },
+          "seq": { "type": "integer", "minimum": 0 },
+          "sku": { "type": "string" }
+        }
+      },
+      "Ack": {
+        "type": "object",
+        "properties": { "ok": { "type": "boolean", "example": true }, "duplicate": { "type": "boolean" } }
+      },
+      "Burst": {
+        "type": "object",
+        "properties": {
+          "run_id": { "type": "string" },
+          "total": { "type": "integer", "example": 20 },
+          "started_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "RunSummary": {
+        "type": "object",
+        "properties": {
+          "run_id": { "type": "string" },
+          "total": { "type": "integer", "nullable": true, "description": "null até a resposta do /burst chegar" },
+          "started_at": { "type": "string", "nullable": true },
+          "received": { "type": "integer" },
+          "duplicates": { "type": "integer" },
+          "processed": { "type": "integer" },
+          "failed": { "type": "integer" },
+          "retries": { "type": "integer" },
+          "rateLimited": { "type": "integer" },
+          "pending": { "type": "integer" },
+          "complete": { "type": "boolean" },
+          "callback": {
+            "type": "object",
+            "properties": {
+              "state": { "type": "string", "enum": ["idle", "sending", "sent", "failed"] },
+              "sentAt": { "type": "string", "nullable": true },
+              "report": { "type": "object", "description": "Relatório devolvido pela plataforma ao /callback", "additionalProperties": true }
+            }
+          }
+        }
+      },
+      "Error": { "type": "object", "properties": { "error": { "type": "string" } } }
+    }
+  }
+}
