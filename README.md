@@ -38,7 +38,7 @@ Relatórios:
 - [`reports/melhor-execucao-real.md`](reports/melhor-execucao-real.md): melhor execução contra a plataforma real (100/100). Em 8 lotes reais o score ficou entre 97 e 100; o ACK varia com a latência do túnel ngrok, não com o processamento.
 - [`reports/melhor-execucao.md`](reports/melhor-execucao.md): execução contra o mock local (gerado por `test/report.js`).
 
-Com o serviço rodando (`npm start`), a documentação interativa (Swagger UI) fica em http://localhost:4000/docs e a especificação OpenAPI em `/openapi.json`; dá para testar `/check` e `/process` direto pelo navegador.
+Com o serviço rodando (`npm start`), a documentação interativa (Swagger UI) fica em http://localhost:4000/docs e a especificação OpenAPI em `/openapi.json`; dá para testar `/check` e `/process` direto pelo navegador. Com o ngrok aberto, o fluxo real também roda só pelo Swagger: `POST /register` (URL do ngrok) -> `POST /burst` -> `GET /runs/{id}` (relatório em `callback.report`).
 
 Para testar as rotas à mão no Postman, importe [`docs/postman-collection.json`](docs/postman-collection.json) (rotas do serviço e da plataforma, com testes de ACK, duplicata e validação).
 

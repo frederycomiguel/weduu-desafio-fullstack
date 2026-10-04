@@ -5,7 +5,7 @@ import { createLogger } from './logger.js';
 import { WorkQueue } from './queue.js';
 import { RunStore } from './run-store.js';
 import { createEnrichClient } from './enrich-client.js';
-import { createPlatformClient } from './platform-client.js';
+import { createPlatformClient, HttpError } from './platform-client.js';
 
 // Especificação OpenAPI lida uma vez na inicialização; servida em /openapi.json e usada pelo Swagger UI.
 const OPENAPI = readFileSync(new URL('./openapi.json', import.meta.url), 'utf8');
@@ -198,6 +198,7 @@ export function createService(opts = {}) {
    * Roteador HTTP. Rotas:
    *  - POST /check     validação do webhook: devolve o mesmo token recebido
    *  - POST /process   recebimento das mensagens do lote (ver handleProcess)
+   *  - POST /register  gatilho LOCAL: registra o webhook na plataforma (ver abaixo)
    *  - POST /burst     gatilho LOCAL (não faz parte do contrato da plataforma): usado por
    *                    scripts/burst.js para pedir um lote de dentro deste processo, que é
    *                    quem precisa guardar o `total` do run
@@ -215,6 +216,21 @@ export function createService(opts = {}) {
         const body = await readJson(req).catch(() => null);
         if (!body || typeof body.token !== 'string') return send(res, 400, { error: 'token required' });
         return send(res, 200, { token: body.token });
+      }
+      // Gatilho local: registra o webhook informado na plataforma e guarda cid/token em memória
+      // (equivale a `npm run register` + reiniciar). Só devolve o cid, nunca o token.
+      if (req.method === 'POST' && pathname === '/register') {
+        const body = await readJson(req).catch(() => null);
+        if (!body || typeof body.webhook !== 'string' || !/^https?:\/\//.test(body.webhook)) {
+          return send(res, 400, { error: 'expected {webhook: "https://...", name?: string}' });
+        }
+        try {
+          const { cid } = await service.register(body.name || cfg.webhookName, body.webhook);
+          return send(res, 200, { ok: true, cid });
+        } catch (err) {
+          if (err instanceof HttpError) return send(res, err.status, err.body ?? { error: err.message });
+          return send(res, 502, { error: err.message });
+        }
       }
       // Gatilho local usado por scripts/burst.js: o serviço precisa registrar o total do run.
       if (req.method === 'POST' && pathname === '/burst') {
@@ -266,6 +282,16 @@ export function createService(opts = {}) {
       }),
     /** Define cid/token (depois do registro, ou lidos do .credentials.json). */
     setCredentials(c) { credentials = c; },
+    /**
+     * Registra `webhook` na plataforma (POST /register): ela chama <webhook>/check e, se o
+     * token for ecoado, devolve { cid, token }, que passam a valer para este serviço.
+     */
+    async register(name, webhook) {
+      const creds = await platform.register(name, webhook);
+      credentials = creds;
+      logger.info('registered', { cid: creds.cid, webhook });
+      return creds;
+    },
     /**
      * Pede um novo lote à plataforma (POST /burst/:cid) e registra o `total` do run.
      * Depois reavalia a conclusão, pois as mensagens podem ter chegado (e terminado)
