@@ -11,7 +11,10 @@ test('/docs serve o Swagger UI e /openapi.json descreve as rotas', async () => {
     const docs = await fetch(`http://127.0.0.1:${port}/docs`);
     assert.equal(docs.status, 200);
     assert.match(docs.headers.get('content-type'), /text\/html/);
-    assert.match(await docs.text(), /SwaggerUIBundle/);
+    const html = await docs.text();
+    assert.match(html, /SwaggerUIBundle/);
+    assert.match(html, /StandaloneLayout/, 'o seletor de definições exige o layout Standalone');
+    assert.match(html, /swagger-ui-standalone-preset/);
 
     const spec = await (await fetch(`http://127.0.0.1:${port}/openapi.json`)).json();
     assert.equal(spec.openapi, '3.0.3');
