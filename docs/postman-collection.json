@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Weduu - Desafio Webhook",
-    "description": "COMO USAR: (1) npm start e ngrok http 4000 abertos; (2) importe esta coleção; (3) clique com o botão direito na pasta \"A. Fluxo automático\" > Run folder (ou use o Runner) e execute em ordem. Os passos 0 a 5 pegam a URL do ngrok, registram, pedem o lote, descobrem um SKU real e testam /enrich e /callback sozinhos. A pasta B tem as rotas do seu serviço para testar uma a uma.",
+    "description": "COMO USAR: (1) npm start e ngrok http 4000 abertos; (2) importe esta coleção; (3) clique com o botão direito na pasta \"A. Fluxo automático\" > Run folder (ou use o Runner) e execute em ordem. Os passos 0 a 5 pegam a URL do ngrok, registram, pedem o lote, descobrem um SKU real e testam /enrich e /callback sozinhos. A pasta B tem as rotas do seu serviço para testar uma a uma (usa um run_id próprio, sem misturar com os lotes reais da pasta A).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -40,6 +40,10 @@
     {
       "key": "stock",
       "value": "0"
+    },
+    {
+      "key": "run_manual",
+      "value": "manual-1"
     }
   ],
   "item": [
@@ -265,6 +269,16 @@
           "name": "POST /process - mensagem nova (ACK rápido)",
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// id novo a cada execução: isola a pasta B dos lotes reais da pasta A",
+                  "pm.collectionVariables.set('run_manual', 'manual-' + Date.now());"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
@@ -286,7 +300,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"run_id\": \"{{run_id}}\",\n  \"seq\": 0,\n  \"sku\": \"sku-001\"\n}"
+              "raw": "{\n  \"run_id\": \"{{run_manual}}\",\n  \"seq\": 0,\n  \"sku\": \"sku-001\"\n}"
             },
             "url": "{{baseUrl}}/process"
           }
@@ -315,7 +329,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"run_id\": \"{{run_id}}\",\n  \"seq\": 0,\n  \"sku\": \"sku-001\"\n}"
+              "raw": "{\n  \"run_id\": \"{{run_manual}}\",\n  \"seq\": 0,\n  \"sku\": \"sku-001\"\n}"
             },
             "url": "{{baseUrl}}/process"
           }
@@ -343,7 +357,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"run_id\": \"{{run_id}}\"\n}"
+              "raw": "{\n  \"run_id\": \"{{run_manual}}\"\n}"
             },
             "url": "{{baseUrl}}/process"
           }
@@ -352,7 +366,7 @@
           "name": "GET /runs/:id - estado do lote",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/runs/{{run_id}}"
+            "url": "{{baseUrl}}/runs/{{run_manual}}"
           }
         },
         {
